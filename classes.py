@@ -17,7 +17,7 @@ class Ray:
         :param point: (x,y,z) numpy array
         :return: length of projection
         """
-        return np.dot(self.direction, point)
+        return np.dot(self.direction, point-self.origin)
 
     def get_point(self, t):
         """
