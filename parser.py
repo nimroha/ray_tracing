@@ -3,7 +3,7 @@ import numpy as np
 from classes import Camera, Set, Material, Light, Sphere, Plane, Box
 
 
-def parse(scene_path):
+def parse(scene_path, width, height):
     with open(scene_path, 'r') as fp:
         materials = []
         lights    = []
@@ -18,10 +18,11 @@ def parse(scene_path):
             print(code, values)
             if code == 'cam':
                 camera = Camera(position=np.array(values[0:3]),
-                                look_at=np.array(values[3:5]),
-                                up=np.array(values[5:8]),
+                                look_at=np.array(values[3:6]),
+                                up=np.array(values[6:9]),
                                 screen_dist=values[9],
-                                screen_width=values[10])
+                                screen_width=values[10],
+                                screen_height=values[10]/width*height)
             elif code == 'set':
                 set_params = Set(background_rgb=np.array(values[0:3]),
                                  root_shadow_rays=int(values[3]),

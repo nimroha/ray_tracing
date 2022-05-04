@@ -34,6 +34,7 @@ class Camera:
     up:           np.ndarray
     screen_dist:  float
     screen_width: float
+    screen_height: float
 
 
 @dataclass
