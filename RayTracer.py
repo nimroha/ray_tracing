@@ -33,8 +33,8 @@ def ray_cast(height, width, camera, set_params, materials, lights, shapes):
             ray = construct_ray_through_pixel(camera, (i/width-0.5)*camera.screen_width, (j/height-0.5)*camera.screen_height)
             hit = find_closest_intersection(ray, shapes)
             if hit is not None:
-                img[i][j] = np.array([1,1,1])
-            # img[i][j] = GetColor(hit);
+                img[height-1-j][i] = np.array([1,1,1])
+            # img[height-1-j][i] = GetColor(hit);
 
     return img
 
