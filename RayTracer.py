@@ -31,8 +31,8 @@ def ray_cast(height, width, camera, set_params, materials, lights, shapes):
         print(i)
         for j in range(height):
             ray = construct_ray_through_pixel(camera, (i/width-0.5)*camera.screen_width, (j/height-0.5)*camera.screen_height)
-            hit = find_closest_intersection(ray, shapes)
-            if hit is not None:
+            intersection, intersected_shape = find_closest_intersection(ray, shapes)
+            if intersection is not None:
                 img[height-1-j][i] = np.array([1,1,1])
             # img[height-1-j][i] = GetColor(hit);
 
@@ -60,11 +60,18 @@ def construct_ray_through_pixel(camera, w, h):
 
 def find_closest_intersection(ray, shapes):
     best_intersection = None
+    best_shape = None
     for shape in shapes:
         current_intersection = shape.find_intersection(ray)
         if current_intersection is not False:
-            best_intersection = current_intersection
-    return best_intersection
+            if best_intersection is None:
+                best_intersection = current_intersection
+                best_shape = shape
+            else:
+                if np.linalg.norm(ray.origin-best_intersection) > np.linalg.norm(ray.origin-current_intersection):
+                    best_intersection = current_intersection
+                    best_shape = shape
+    return best_intersection, best_shape
 
 
 if __name__ == '__main__':

@@ -109,7 +109,12 @@ class Sphere(Shape):
             return False
 
         t_diff_abs = np.sqrt(r ** 2 - cb_size ** 2)
-        return ray.get_point(cb_size - t_diff_abs), ray.get_point(cb_size + t_diff_abs)
+        p1 = ray.get_point(cb_size - t_diff_abs)
+        p2 = ray.get_point(cb_size + t_diff_abs)
+        if np.linalg.norm(ray.origin-p1) < np.linalg.norm(ray.origin-p2):
+            return p1
+        else:
+            return p2
 
 
 @dataclass
