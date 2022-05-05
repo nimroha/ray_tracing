@@ -126,9 +126,13 @@ class Plane(Shape):
     normal: np.ndarray
     offset: float
 
+    def __post_init__(self):
+        """normalize normal"""
+        self.normal /= norm2(self.normal)
+
     def find_intersection(self, ray: Ray):
         """
-        find the ray's intersection with a sphere
+        find the ray's intersection with a plane
         denote:
         o - ray origin
         d - ray direction
@@ -137,17 +141,17 @@ class Plane(Shape):
         p - the intersection point
         t - the respective line parameter
 
-        use the plane equation <n,o + t * d> = c to find the intersection point (if exists)
+        use the plane equation <n,p> = <n,o + t * d> = <n,o> + t * <n,d> = c to find the intersection point (if exists)
 
         :param ray: a Ray instance
         :return: the intersecting point, or False for no intersection
         """
-        raise NotImplementedError('not finished')
-        projection_on_normal = ray.project(self.normal)
-        if projection_on_normal <= 0:
-            return False
+        n_dot_d = np.dot(self.normal, ray.direction)
+        if np.isclose(n_dot_d, 0, rtol=0.01):
+            return False # ray is parallel to the plane
 
-        t = (self.offset - np.dot(ray.origin, self.normal)) / projection_on_normal
+        n_dot_o = np.dot(self.normal, ray.origin)
+        t = (self.offset - n_dot_o) / n_dot_d
         point = ray.get_point(t)
 
         return point
