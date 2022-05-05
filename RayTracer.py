@@ -50,7 +50,6 @@ def construct_ray_through_pixel(camera, w, h):
 
     target_point = camera.position + towards*camera.screen_dist + up_perp*h + width_direction*w
     ray_direction = target_point - camera.position
-    ray_direction = ray_direction/np.linalg.norm(ray_direction)
 
     return Ray(origin=camera.position,
                direction=ray_direction)

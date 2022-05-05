@@ -11,13 +11,17 @@ class Ray:
     origin:    np.ndarray
     direction: np.ndarray
 
+    def __post_init__(self):
+        """normalize direction"""
+        self.direction /= norm2(self.direction)
+
     def project(self, point):
         """
-        projection of `point` vector on the `direction` vector
+        projection of the `direction` vector on the `origin->`point` vector
         :param point: (x,y,z) numpy array
         :return: length of projection
         """
-        return np.dot(self.direction, point-self.origin)
+        return np.dot(self.direction, point - self.origin)
 
     def get_point(self, t):
         """
@@ -97,7 +101,7 @@ class Sphere(Shape):
         r = self.radius
         ob_size = ray.project(c)
         if ob_size <= 0:
-            return False # TODO is this a good "no intersection" result?
+            return False
 
         oc = c - ray.origin
         oc_size = norm2(oc)
@@ -109,8 +113,8 @@ class Sphere(Shape):
             return False
 
         t_diff_abs = np.sqrt(r ** 2 - cb_size ** 2)
-        p1 = ray.get_point(cb_size - t_diff_abs)
-        p2 = ray.get_point(cb_size + t_diff_abs)
+        p1 = ray.get_point(ob_size - t_diff_abs)
+        p2 = ray.get_point(ob_size + t_diff_abs)
         if np.linalg.norm(ray.origin-p1) < np.linalg.norm(ray.origin-p2):
             return p1
         else:
@@ -141,7 +145,7 @@ class Plane(Shape):
         raise NotImplementedError('not finished')
         projection_on_normal = ray.project(self.normal)
         if projection_on_normal <= 0:
-            return False # TODO is this a good "no intersection" result?
+            return False
 
         t = (self.offset - np.dot(ray.origin, self.normal)) / projection_on_normal
         point = ray.get_point(t)
