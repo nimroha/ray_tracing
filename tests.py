@@ -30,3 +30,13 @@ def test_plane_intersection():
     parallel_direction = point - plane.normal * plane.offset
     parallel_ray = Ray(origin=np.array([2., 2., 0]), direction=parallel_direction)
     assert plane.find_intersection(parallel_ray) == False
+
+
+def test_box_intersection():
+    ray = Ray(origin=np.array([1., 0., 0.]), direction=np.array([1., 1., 1.]))
+    box = Box(material=1, center=np.array([3., 3., 3.]), length=2)
+
+    point = box.find_intersection(ray)
+    assert False # TODO not thoroughly tested yet
+    # ray = Ray(origin=np.array([1., 0., 0.]), direction=np.array([1., 1., 0.]))
+

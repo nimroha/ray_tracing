@@ -162,3 +162,20 @@ class Box(Shape):
     center: np.ndarray
     length: float
 
+    def find_intersection(self, ray: Ray):
+        half_length = self.length / 2
+        box_min = self.center - half_length
+        box_max = self.center + half_length
+        t_min = np.divide(box_min - ray.origin, ray.direction)
+        t_max = np.divide(box_max - ray.origin, ray.direction)
+        # TODO we can probably return False her if no t is positive
+
+        # if we exit the slab on any axis before entering on all axes, then no intersection
+        if (t_min[0] > min(t_max[1], t_max[2]) or
+            t_min[1] > min(t_max[0], t_max[2]) or
+            t_min[2] > min(t_max[0], t_max[1])):
+            return False
+
+        # the minimum t inside all 3 slabs, is the max of mins # TODO make sure no edge cases
+        t = t_min.max()
+        return ray.get_point(t)
