@@ -164,6 +164,8 @@ class Plane(Shape):
 
         return point
 
+    def normal_at_point(self, point: np.array):
+        return self.normal
 
 @dataclass
 class Box(Shape):
