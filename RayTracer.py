@@ -98,7 +98,7 @@ def get_color(intersection_point, intersected_shape, camera_ray, set_params, mat
         # specular coloring
         # reflect_direction calculation: shading13.pdf - slide 41 "The Highlight Vector"
         reflect_direction = light_direction - 2*np.dot(light_direction, surface_normal)*surface_normal
-        color_out += current_material.specular_rgb * np.power(np.abs(np.dot(reflect_direction, -camera_ray.direction)), current_material.phong)
+        color_out += current_material.specular_rgb * np.power(np.abs(np.dot(reflect_direction, -camera_ray.direction)), current_material.phong) * light.specular_intens
 
     # TODO: is this ok?
     color_out[color_out > 1] = 1

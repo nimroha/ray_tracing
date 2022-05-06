@@ -47,7 +47,7 @@ def parse(scene_path, width, height):
                                   material=int(values[4])))
             elif code == 'lgt':
                 lights.append(Light(position=np.array(values[0:3]),
-                                    rgb=np.array(values[3:5]),
+                                    rgb=np.array(values[3:6]),
                                     specular_intens=values[6],
                                     shadow_intens=values[7],
                                     radius=values[8]))
