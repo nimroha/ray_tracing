@@ -29,8 +29,8 @@ def parse(scene_path, width, height):
                                  max_recursions=int(values[4]))
             elif code == 'mtl':
                 materials.append(Material(diffuse_rgb=np.array(values[0:3]),
-                                          specular_rgb=np.array(values[3:5]),
-                                          reflect_rgb=np.array(values[5:8]),
+                                          specular_rgb=np.array(values[3:6]),
+                                          reflect_rgb=np.array(values[6:9]),
                                           phong=values[9],
                                           transp=values[10]))
             elif code == 'sph':

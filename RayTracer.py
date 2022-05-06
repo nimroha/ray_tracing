@@ -32,7 +32,7 @@ def ray_cast(height, width, camera, set_params, materials, lights, shapes):
         for j in range(height):
             ray = construct_ray_through_pixel(camera, (i/width-0.5)*camera.screen_width, (j/height-0.5)*camera.screen_height)
             intersection_point, intersected_shape = find_closest_intersection(ray, shapes)
-            img[height-1-j][i] = get_color(intersection_point, intersected_shape, set_params, materials, lights, shapes)
+            img[height-1-j][i] = get_color(intersection_point, intersected_shape, ray, set_params, materials, lights, shapes)
 
     return img
 
@@ -71,7 +71,7 @@ def find_closest_intersection(ray, shapes):
     return best_intersection, best_shape
 
 
-def get_color(intersection_point, intersected_shape, set_params, materials, lights, shapes):
+def get_color(intersection_point, intersected_shape, camera_ray, set_params, materials, lights, shapes):
     if intersection_point is None:
         return set_params.background_rgb
 
@@ -93,8 +93,15 @@ def get_color(intersection_point, intersected_shape, set_params, materials, ligh
 
         # diffuse coloring
         surface_normal = intersected_shape.normal_at_point(light_intersection_point)
-        # TODO - "+=" only supports one light source
         color_out += current_material.diffuse_rgb * np.abs(np.dot(surface_normal, -light_direction))
+
+        # specular coloring
+        # reflect_direction calculation: shading13.pdf - slide 41 "The Highlight Vector"
+        reflect_direction = light_direction - 2*np.dot(light_direction, surface_normal)*surface_normal
+        color_out += current_material.specular_rgb * np.power(np.abs(np.dot(reflect_direction, -camera_ray.direction)), current_material.phong)
+
+    # TODO: is this ok?
+    color_out[color_out > 1] = 1
 
     return color_out
 
