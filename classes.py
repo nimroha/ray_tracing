@@ -74,6 +74,10 @@ class Shape:
         # will raise if we miss an implementation
         raise NotImplementedError(f'the subclass {self.__class__} did not implement this method')
 
+    def normal_at_point(self, point: np.array):
+        # will raise if we miss an implementation
+        raise NotImplementedError(f'the subclass {self.__class__} did not implement this method')
+
 
 @dataclass
 class Sphere(Shape):
@@ -120,6 +124,10 @@ class Sphere(Shape):
         else:
             return p2
 
+    def normal_at_point(self, point: np.array):
+        normal_vec = point-self.center
+        normal_vec = normal_vec/np.linalg.norm(normal_vec)
+        return normal_vec
 
 @dataclass
 class Plane(Shape):

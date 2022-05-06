@@ -32,7 +32,7 @@ def ray_cast(height, width, camera, set_params, materials, lights, shapes):
         for j in range(height):
             ray = construct_ray_through_pixel(camera, (i/width-0.5)*camera.screen_width, (j/height-0.5)*camera.screen_height)
             intersection_point, intersected_shape = find_closest_intersection(ray, shapes)
-            img[height-1-j][i] = get_color(intersection_point, intersected_shape, set_params, materials)
+            img[height-1-j][i] = get_color(intersection_point, intersected_shape, set_params, materials, lights, shapes)
 
     return img
 
@@ -71,13 +71,32 @@ def find_closest_intersection(ray, shapes):
     return best_intersection, best_shape
 
 
-def get_color(intersection_point, intersected_shape, set_params, materials):
+def get_color(intersection_point, intersected_shape, set_params, materials, lights, shapes):
     if intersection_point is None:
         return set_params.background_rgb
 
-    current_material = materials[intersected_shape.material]
+    current_material = materials[intersected_shape.material-1]
 
-    return current_material.diffuse_rgb
+    color_out = np.array([0.0, 0.0, 0.0])
+
+    for light in lights:
+        light_direction = intersection_point - light.position
+        light_direction = light_direction/np.linalg.norm(light_direction)
+        light_ray = Ray(origin=light.position, direction=light_direction)
+        light_intersection_point, light_intersected_shape = find_closest_intersection(light_ray, shapes)
+
+        # skip if the light does not reach the intersection point
+        if light_intersection_point is None:
+            continue
+        if not np.all(np.isclose(light_intersection_point, intersection_point)):
+            continue
+
+        # diffuse coloring
+        surface_normal = intersected_shape.normal_at_point(light_intersection_point)
+        # TODO - "+=" only supports one light source
+        color_out += current_material.diffuse_rgb * np.abs(np.dot(surface_normal, -light_direction))
+
+    return color_out
 
 if __name__ == '__main__':
     main()
