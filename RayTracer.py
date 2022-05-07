@@ -93,17 +93,65 @@ def get_color(intersection_point, intersected_shape, camera_ray, set_params, mat
 
         # diffuse coloring
         surface_normal = intersected_shape.normal_at_point(light_intersection_point)
-        color_out += current_material.diffuse_rgb * np.abs(np.dot(surface_normal, -light_direction))
+        diffuse_color = current_material.diffuse_rgb * np.abs(np.dot(surface_normal, -light_direction))
 
         # specular coloring
         # reflect_direction calculation: shading13.pdf - slide 41 "The Highlight Vector"
         reflect_direction = light_direction - 2*np.dot(light_direction, surface_normal)*surface_normal
-        color_out += current_material.specular_rgb * np.power(np.abs(np.dot(reflect_direction, -camera_ray.direction)), current_material.phong) * light.specular_intens
+        specular_color = current_material.specular_rgb * np.power(np.abs(np.dot(reflect_direction, -camera_ray.direction)), current_material.phong) * light.specular_intens
+
+        # soft shadows
+        # perc_rays_hit = get_soft_shadow_perc_rays_hit(light_ray, set_params.root_shadow_rays, light.radius, intersection_point, shapes)
+        # light_intensity = (1-light.shadow_intens)*1 + light.shadow_intens*perc_rays_hit
+        light_intensity = 1
+
+        # light intensity only affects the diffuse and specular colors
+        color_out += light_intensity*(diffuse_color+specular_color)
 
     # TODO: is this ok?
     color_out[color_out > 1] = 1
 
     return color_out
+
+
+def get_soft_shadow_perc_rays_hit(light_ray, num_shadow_rays, radius, intersection_point, shapes):
+    # Find a plane which is perpendicular to the ray
+    axis_one = np.array([0,0,1])
+    if np.all(np.isclose(axis_one, light_ray.direction)):
+        axis_one = np.array([1, 0, 0])
+
+    axis_one = axis_one - np.dot(axis_one, light_ray.direction) / np.dot(light_ray.direction, light_ray.direction) * light_ray.direction
+    axis_one = axis_one / np.linalg.norm(axis_one)
+    axis_two = np.cross(axis_one, light_ray.direction)
+    axis_two = axis_two / np.linalg.norm(axis_two)
+
+    light_hit_counter = 0
+
+    # Define a rectangle & divide the rectangle into a grid of N × N cells
+    rand_width = radius / num_shadow_rays
+    for i in np.linspace(-radius/2+rand_width/2,radius/2-rand_width/2,num_shadow_rays):
+        for j in np.linspace(-radius/2+rand_width/2,radius/2-rand_width/2,num_shadow_rays):
+            #  we select a random point in each cell (by uniformly sampling x value and y value)
+            i_perturbation = i + np.random.uniform() * rand_width - rand_width / 2
+            j_perturbation = j + np.random.uniform() * rand_width - rand_width / 2
+
+            # perturbation cell center calculation
+            current_cell_center = light_ray.origin + axis_one * i_perturbation + axis_two * j_perturbation
+
+            light_direction = intersection_point - current_cell_center
+            light_direction = light_direction / np.linalg.norm(light_direction)
+            light_ray = Ray(origin=current_cell_center, direction=light_direction)
+            light_intersection_point, light_intersected_shape = find_closest_intersection(light_ray, shapes)
+
+            # skip if the light does not reach the intersection point
+            if light_intersection_point is None:
+                continue
+            if not np.all(np.isclose(light_intersection_point, intersection_point)):
+                continue
+
+            light_hit_counter += 1
+
+    return light_hit_counter/(num_shadow_rays*num_shadow_rays)
 
 if __name__ == '__main__':
     main()
