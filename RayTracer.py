@@ -106,7 +106,7 @@ def get_color(intersection_point, intersected_shape, camera_ray, set_params, mat
         light_intensity = 1
 
         # light intensity only affects the diffuse and specular colors
-        color_out += light_intensity*(diffuse_color+specular_color)
+        color_out += light_intensity*(diffuse_color+specular_color)*light.rgb
 
     # TODO: is this ok?
     color_out[color_out > 1] = 1
