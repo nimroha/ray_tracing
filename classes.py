@@ -110,7 +110,8 @@ class Sphere(Shape):
         oc = c - ray.origin
         oc_size = norm2(oc)
         cb_size = np.sqrt(oc_size ** 2 - ob_size ** 2)
-        if np.isclose(cb_size, r, rtol=TANGENT_TOLERANCE):
+        # if np.isclose(cb_size, r, rtol=TANGENT_TOLERANCE):
+        if np.abs(cb_size - r) <= TANGENT_TOLERANCE:
             return ray.get_point(ob_size)
 
         if cb_size > r:
@@ -155,7 +156,8 @@ class Plane(Shape):
         :return: the intersecting point, or False for no intersection
         """
         n_dot_d = np.dot(self.normal, ray.direction)
-        if np.isclose(n_dot_d, 0, rtol=0.01):
+        # if np.isclose(n_dot_d, 0, rtol=0.01):
+        if np.abs(n_dot_d) < 0.01:
             return False # ray is parallel to the plane
 
         n_dot_o = np.dot(self.normal, ray.origin)
