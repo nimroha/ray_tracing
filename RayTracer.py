@@ -31,8 +31,8 @@ def ray_cast(height, width, camera, set_params, materials, lights, shapes):
         print(i)
         for j in range(height):
             ray = construct_ray_through_pixel(camera, (i/width-0.5)*camera.screen_width, (j/height-0.5)*camera.screen_height)
-            intersection_point, intersected_shape = find_closest_intersection(ray, shapes)
-            img[height-1-j][i] = get_color(intersection_point, intersected_shape, ray, set_params, materials, lights, shapes)
+            intersection_point, intersected_shape, _ = find_closest_intersection(ray, shapes)
+            img[height-1-j][i], _ = get_color(intersection_point, intersected_shape, ray, set_params, materials, lights, shapes)
 
     return img
 
@@ -58,32 +58,41 @@ def construct_ray_through_pixel(camera, w, h):
 def find_closest_intersection(ray, shapes):
     best_intersection = None
     best_shape = None
+    best_index = None
+    index = 0
     for shape in shapes:
         current_intersection = shape.find_intersection(ray)
         if current_intersection is not False:
+            if np.dot(current_intersection-ray.origin, ray.direction) < 0:
+                # point is behind the ray
+                continue
             if best_intersection is None:
                 best_intersection = current_intersection
                 best_shape = shape
+                best_index = index
             else:
                 if np.linalg.norm(ray.origin-best_intersection) > np.linalg.norm(ray.origin-current_intersection):
                     best_intersection = current_intersection
                     best_shape = shape
-    return best_intersection, best_shape
+                    best_index = index
+        index += 1
+    return best_intersection, best_shape, best_index
 
 
 def get_color(intersection_point, intersected_shape, camera_ray, set_params, materials, lights, shapes):
     if intersection_point is None:
-        return set_params.background_rgb
+        return set_params.background_rgb, True
 
     current_material = materials[intersected_shape.material-1]
 
     color_out = np.array([0.0, 0.0, 0.0])
+    shapes_without_current_object = None
 
     for light in lights:
         light_direction = intersection_point - light.position
         light_direction = light_direction/np.linalg.norm(light_direction)
         light_ray = Ray(origin=light.position, direction=light_direction)
-        light_intersection_point, light_intersected_shape = find_closest_intersection(light_ray, shapes)
+        light_intersection_point, light_intersected_shape, shape_index = find_closest_intersection(light_ray, shapes)
 
         # skip if the light does not reach the intersection point
         if light_intersection_point is None:
@@ -105,13 +114,28 @@ def get_color(intersection_point, intersected_shape, camera_ray, set_params, mat
         # light_intensity = (1-light.shadow_intens)*1 + light.shadow_intens*perc_rays_hit
         light_intensity = 1
 
-        # light intensity only affects the diffuse and specular colors
-        color_out += light_intensity*(diffuse_color+specular_color)*light.rgb
+        # transparency
+        if current_material.transp > 0:
+            if shapes_without_current_object is None:
+                if len(shapes) == 0:
+                    shapes_without_current_object = shapes
+                else:
+                    shapes_without_current_object = shapes.copy()
+                    del shapes_without_current_object[shape_index]
 
-    # TODO: is this ok?
+            inner_intersection_point, inner_intersected_shape, _ = find_closest_intersection(camera_ray, shapes_without_current_object)
+            back_color, hit_background = get_color(inner_intersection_point, inner_intersected_shape, camera_ray, set_params, materials, lights, shapes_without_current_object)
+            if not hit_background:
+                back_color = back_color * light.rgb
+        else:
+            back_color = np.array([0.0, 0.0, 0.0])
+
+        # light intensity only affects the diffuse and specular colors
+        color_out += light.rgb*light_intensity*(diffuse_color+specular_color)*(1-current_material.transp) + current_material.transp*back_color
+
     color_out[color_out > 1] = 1
 
-    return color_out
+    return color_out, False
 
 
 def get_soft_shadow_perc_rays_hit(light_ray, num_shadow_rays, radius, intersection_point, shapes):
@@ -141,7 +165,7 @@ def get_soft_shadow_perc_rays_hit(light_ray, num_shadow_rays, radius, intersecti
             light_direction = intersection_point - current_cell_center
             light_direction = light_direction / np.linalg.norm(light_direction)
             light_ray = Ray(origin=current_cell_center, direction=light_direction)
-            light_intersection_point, light_intersected_shape = find_closest_intersection(light_ray, shapes)
+            light_intersection_point, light_intersected_shape, _ = find_closest_intersection(light_ray, shapes)
 
             # skip if the light does not reach the intersection point
             if light_intersection_point is None:
