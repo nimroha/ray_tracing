@@ -1,9 +1,13 @@
 import argparse
 import numpy as np
 
+
+BLACK = np.array([0.0, 0.0, 0.0])
+
+from time import time
+
 from parser import parse
-from utils import write_img
-from utils import is_close
+from utils import write_img, is_close
 from classes import Camera, Set, Material, Light, Sphere, Plane, Box, Ray
 
 
@@ -20,7 +24,9 @@ def main():
     print(args)
     camera, set_params, materials, lights, shapes = parse(args.scene,args.width,args.height)
 
+    start = time()
     img = ray_cast(args.height, args.width, camera, set_params, materials, lights, shapes)
+    print(f'rendering scene took {time() - start:.2f} seconds')
 
     write_img(img, args.output)
 
@@ -33,7 +39,7 @@ def ray_cast(height, width, camera, set_params, materials, lights, shapes):
         for j in range(height):
             ray = construct_ray_through_pixel(camera, towards, up_perp, width_direction, (i/width-0.5)*camera.screen_width, (j/height-0.5)*camera.screen_height)
             intersection_point, intersected_shape, intersected_shape_index = find_closest_intersection(ray, shapes)
-            img[height-1-j][i], _ = get_color(intersection_point, intersected_shape, intersected_shape_index, ray, set_params, materials, lights, shapes)
+            img[height-1-j][i], _ = get_color(intersection_point, intersected_shape, intersected_shape_index, ray, set_params, materials, lights, shapes, set_params.max_recursions)
 
     return img
 
@@ -81,13 +87,16 @@ def find_closest_intersection(ray, shapes):
     return best_intersection, best_shape, best_index
 
 
-def get_color(intersection_point, intersected_shape, intersected_shape_index, camera_ray, set_params, materials, lights, shapes):
+def get_color(intersection_point, intersected_shape, intersected_shape_index, camera_ray, set_params, materials, lights, shapes, recursions_left):
+    if recursions_left == 0:
+        return BLACK
+
     if intersection_point is None:
         return set_params.background_rgb, True
 
     current_material = materials[intersected_shape.material-1]
 
-    color_out = np.array([0.0, 0.0, 0.0])
+    color_out = BLACK
     shapes_without_current_object = None
 
     for light in lights:
@@ -130,11 +139,11 @@ def get_color(intersection_point, intersected_shape, intersected_shape_index, ca
                     del shapes_without_current_object[light_intersected_shape_index]
 
             inner_intersection_point, inner_intersected_shape, inner_intersected_shape_index = find_closest_intersection(camera_ray, shapes_without_current_object)
-            back_color, hit_background = get_color(inner_intersection_point, inner_intersected_shape, inner_intersected_shape_index, camera_ray, set_params, materials, lights, shapes_without_current_object)
+            back_color, hit_background = get_color(inner_intersection_point, inner_intersected_shape, inner_intersected_shape_index, camera_ray, set_params, materials, lights, shapes_without_current_object, recursions_left)
             if not hit_background:
                 back_color = back_color * light.rgb
         else:
-            back_color = np.array([0.0, 0.0, 0.0])
+            back_color = BLACK
 
         # light intensity only affects the diffuse and specular colors
         cur_light_color_out = light.rgb*light_intensity*(diffuse_color+specular_color)*(1-current_material.transp) + current_material.transp*back_color
