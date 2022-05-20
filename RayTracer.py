@@ -191,8 +191,8 @@ def get_soft_shadow_perc_rays_hit(light_ray, num_shadow_rays, radius, intersecti
 
             light_direction = intersection_point - current_cell_center
             light_direction = light_direction / np.linalg.norm(light_direction)
-            light_ray = Ray(origin=current_cell_center, direction=light_direction)
-            light_intersection_point, light_intersected_shape, _ = find_closest_intersection(light_ray, shapes)
+            new_light_ray = Ray(origin=current_cell_center, direction=light_direction)
+            light_intersection_point, light_intersected_shape, _ = find_closest_intersection(new_light_ray, shapes)
 
             # skip if the light does not reach the intersection point
             if light_intersection_point is None:
