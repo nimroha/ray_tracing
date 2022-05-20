@@ -74,7 +74,7 @@ class Shape:
         # will raise if we miss an implementation
         raise NotImplementedError(f'the subclass {self.__class__} did not implement this method')
 
-    def normal_at_point(self, point: np.array):
+    def normal_at_point(self, point: np.ndarray):
         # will raise if we miss an implementation
         raise NotImplementedError(f'the subclass {self.__class__} did not implement this method')
 
@@ -105,12 +105,11 @@ class Sphere(Shape):
         r = self.radius
         ob_size = ray.project(c)
         if ob_size <= 0:
-            return False
+            return False # sphere is behind the ray
 
         oc = c - ray.origin
         oc_size = norm2(oc)
         cb_size = np.sqrt(oc_size ** 2 - ob_size ** 2)
-        # if np.isclose(cb_size, r, rtol=TANGENT_TOLERANCE):
         if np.abs(cb_size - r) <= TANGENT_TOLERANCE:
             return ray.get_point(ob_size)
 
@@ -156,7 +155,6 @@ class Plane(Shape):
         :return: the intersecting point, or False for no intersection
         """
         n_dot_d = np.dot(self.normal, ray.direction)
-        # if np.isclose(n_dot_d, 0, rtol=0.01):
         if np.abs(n_dot_d) < 0.01:
             return False # ray is parallel to the plane
 
@@ -174,20 +172,35 @@ class Box(Shape):
     center: np.ndarray
     length: float
 
-    def find_intersection(self, ray: Ray):
+    def __post_init__(self):
         half_length = self.length / 2
-        box_min = self.center - half_length
-        box_max = self.center + half_length
-        t_min = np.divide(box_min - ray.origin, ray.direction)
-        t_max = np.divide(box_max - ray.origin, ray.direction)
-        # TODO we can probably return False her if no t is positive
+        self._box_min = self.center - half_length
+        self._box_max = self.center + half_length
 
-        # if we exit the slab on any axis before entering on all axes, then no intersection
-        if (t_min[0] > min(t_max[1], t_max[2]) or
-            t_min[1] > min(t_max[0], t_max[2]) or
-            t_min[2] > min(t_max[0], t_max[1])):
-            return False
 
-        # the minimum t inside all 3 slabs, is the max of mins # TODO make sure no edge cases
-        t = t_min.max()
-        return ray.get_point(t)
+    def find_intersection(self, ray: Ray):
+        """
+        use the slabs method to find a ray's intersection with the axis-aligned box
+
+        :param ray: a Ray instance
+        :return: the intersecting point, or False for no intersection
+        """
+        t_min = np.divide(self._box_min - ray.origin, ray.direction)
+        t_max = np.divide(self._box_max - ray.origin, ray.direction)
+
+        t_enter = t_min.max() # the first t inside all 3 slabs, is the max of mins
+        t_exit  = t_max.min() # the first t outside one of the slabs, is the min of maxs
+        if t_exit < t_enter:
+            return False # no intersection
+
+        return ray.get_point(t_enter)
+
+    def normal_at_point(self, point: np.ndarray):
+        # we're axis aligned, the normal will always have exactly one non-zero coordinate
+        # we only need to find which face the point is on by finding the identical coordinate on the point
+        box_max_mask = point == self._box_max
+        box_min_mask = point == self._box_min
+        if np.any(box_max_mask):
+            return norm2(box_max_mask)
+        else:
+            return -norm2(box_min_mask)
