@@ -27,33 +27,34 @@ def main():
 
 def ray_cast(height, width, camera, set_params, materials, lights, shapes):
     img = np.zeros([height, width, 3], dtype=np.float32)  # converted to uint8 before saving
-
+    towards, up_perp, width_direction = get_viewing_window_vectors(camera)
     for i in range(width):
         print(i)
         for j in range(height):
-            ray = construct_ray_through_pixel(camera, (i/width-0.5)*camera.screen_width, (j/height-0.5)*camera.screen_height)
+            ray = construct_ray_through_pixel(camera, towards, up_perp, width_direction, (i/width-0.5)*camera.screen_width, (j/height-0.5)*camera.screen_height)
             intersection_point, intersected_shape, intersected_shape_index = find_closest_intersection(ray, shapes)
             img[height-1-j][i], _ = get_color(intersection_point, intersected_shape, intersected_shape_index, ray, set_params, materials, lights, shapes)
 
     return img
 
 
-def construct_ray_through_pixel(camera, w, h):
-    towards = camera.look_at - camera.position
-    towards = towards/np.linalg.norm(towards)
-
-    up_perp = camera.up - np.dot(camera.up,towards)/np.dot(towards,towards)*towards
-    up_perp = up_perp/np.linalg.norm(up_perp)
-
-    # width_direction = np.cross(towards, up_perp)
-    width_direction = np.cross(up_perp, towards)
-    width_direction = width_direction/np.linalg.norm(width_direction)
-
+def construct_ray_through_pixel(camera, towards, up_perp, width_direction, w, h):
     target_point = camera.position + towards*camera.screen_dist + up_perp*h + width_direction*w
     ray_direction = target_point - camera.position
 
     return Ray(origin=camera.position,
                direction=ray_direction)
+
+
+def get_viewing_window_vectors(camera):
+    towards = camera.look_at - camera.position
+    towards = towards / np.linalg.norm(towards)
+    up_perp = camera.up - np.dot(camera.up, towards) / np.dot(towards, towards) * towards
+    up_perp = up_perp / np.linalg.norm(up_perp)
+    # width_direction = np.cross(towards, up_perp)
+    width_direction = np.cross(up_perp, towards)
+    width_direction = width_direction / np.linalg.norm(width_direction)
+    return towards, up_perp, width_direction
 
 
 def find_closest_intersection(ray, shapes):
@@ -115,7 +116,7 @@ def get_color(intersection_point, intersected_shape, intersected_shape_index, ca
         specular_color = current_material.specular_rgb * np.power(np.abs(np.dot(reflect_direction, -camera_ray.direction)), current_material.phong) * light.specular_intens
 
         # soft shadows
-        # perc_rays_hit = get_soft_shadow_perc_rays_hit(light_ray, set_params.root_shadow_rays, light.radius, intersection_point, shapes)
+        # perc_rays_hit = get_soft_shadow_perc_rays_hit(light_ray, set_params.root_shadow_rays, light.radius, intersection_point, shapes) # TODO
         # light_intensity = (1-light.shadow_intens)*1 + light.shadow_intens*perc_rays_hit
         light_intensity = 1
 
