@@ -7,8 +7,8 @@ BLACK = np.array([0.0, 0.0, 0.0])
 from time import time
 
 from parser import parse
-from utils import write_img, is_close
-from classes import Camera, Set, Material, Light, Sphere, Plane, Box, Ray
+from utils import write_img, is_close, get_reflected_vector
+from classes import Ray
 
 
 
@@ -88,7 +88,7 @@ def find_closest_intersection(ray, shapes):
 
 def get_color(intersection_point, intersected_shape, intersected_shape_index, ray, set_params, materials, lights, shapes, recursions_left):
     if recursions_left == 0:
-        return BLACK.copy()
+        return BLACK.copy(), True # TODO handle ambient light here?
 
     if intersection_point is None:
         return set_params.background_rgb, True
@@ -119,8 +119,7 @@ def get_color(intersection_point, intersected_shape, intersected_shape_index, ra
         diffuse_color = current_material.diffuse_rgb * np.abs(np.dot(surface_normal, -light_direction))
 
         # specular coloring
-        # reflect_direction calculation: shading13.pdf - slide 41 "The Highlight Vector"
-        reflect_direction = light_direction - 2*np.dot(light_direction, surface_normal)*surface_normal
+        reflect_direction = get_reflected_vector(light_direction, surface_normal)
         specular_color = current_material.specular_rgb * np.power(np.abs(np.dot(reflect_direction, -ray.direction)), current_material.phong) * light.specular_intens
 
         # soft shadows
@@ -150,12 +149,16 @@ def get_color(intersection_point, intersected_shape, intersected_shape_index, ra
             color_out += cur_light_color_out*(1-light.shadow_intens)
         else:
             color_out += cur_light_color_out
-    #
-    # # reflectance coloring
-    # # cast a new ray in the reflected direction
-    # reflected_direction =
-    # reflected_ray = Ray(intersection_point, )
 
+    # reflectance coloring # TODO add epsilon somewhere
+    # cast a new ray in the reflected direction
+    reflected_direction = get_reflected_vector(ray.direction, intersected_shape.normal_at_point(intersection_point))
+    reflected_ray = Ray(intersection_point, reflected_direction)
+    shapes_without_current_object = shapes[:intersected_shape_index] + shapes[intersected_shape_index + 1:] # TODO replace the top one
+    ref_intersection_point, ref_intersected_shape, ref_intersected_shape_index = find_closest_intersection(reflected_ray, shapes_without_current_object)
+    if ref_intersection_point is not None:
+        reflected_color, _ = get_color(ref_intersection_point, ref_intersected_shape, ref_intersected_shape_index, reflected_ray, set_params, materials, lights, shapes, recursions_left - 1)
+        color_out += np.multiply(current_material.reflect_rgb, reflected_color)
 
     color_out[color_out > 1] = 1
 

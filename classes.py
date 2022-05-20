@@ -201,6 +201,6 @@ class Box(Shape):
         box_max_mask = point == self._box_max
         box_min_mask = point == self._box_min
         if np.any(box_max_mask):
-            return norm2(box_max_mask)
+            return box_max_mask.astype(np.float32)
         else:
-            return -norm2(box_min_mask)
+            return -box_min_mask.astype(np.float32)
