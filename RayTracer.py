@@ -123,9 +123,8 @@ def get_color(intersection_point, intersected_shape, intersected_shape_index, ra
         specular_color = current_material.specular_rgb * np.power(np.abs(np.dot(reflect_direction, -ray.direction)), current_material.phong) * light.specular_intens
 
         # soft shadows
-        # perc_rays_hit = get_soft_shadow_perc_rays_hit(light_ray, set_params.root_shadow_rays, light.radius, intersection_point, shapes) # TODO
-        # light_intensity = (1-light.shadow_intens)*1 + light.shadow_intens*perc_rays_hit
-        light_intensity = 1
+        perc_rays_hit = get_soft_shadow_perc_rays_hit(light_ray, set_params.root_shadow_rays, light.radius, intersection_point, shapes)
+        light_intensity = (1-light.shadow_intens)*1 + light.shadow_intens*perc_rays_hit
 
         # transparency
         if current_material.transp > 0:
@@ -143,12 +142,9 @@ def get_color(intersection_point, intersected_shape, intersected_shape_index, ra
         else:
             back_color = BLACK.copy()
 
-        # light intensity only affects the diffuse and specular colors
-        cur_light_color_out = light.rgb*light_intensity*(diffuse_color+specular_color)*(1-current_material.transp) + current_material.transp*back_color
-        if light_hit_different_object:
-            color_out += cur_light_color_out*(1-light.shadow_intens)
-        else:
-            color_out += cur_light_color_out
+        cur_light_color_out = light.rgb * (diffuse_color + specular_color) * (1 - current_material.transp) + current_material.transp * back_color
+        color_out += cur_light_color_out * light_intensity
+
 
     # reflectance coloring # TODO add epsilon somewhere
     # cast a new ray in the reflected direction
