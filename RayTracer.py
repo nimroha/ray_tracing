@@ -147,15 +147,15 @@ def get_color(intersection_point, intersected_shape, intersected_shape_index, ra
         color_out += cur_light_color_out * light_intensity
 
 
-    # reflectance coloring # TODO add epsilon somewhere
+    # reflectance coloring
     # cast a new ray in the reflected direction
     reflected_direction = get_reflected_vector(ray.direction, intersected_shape.normal_at_point(intersection_point))
     reflected_ray = Ray(intersection_point, reflected_direction)
     shapes_without_current_object = shapes[:intersected_shape_index] + shapes[intersected_shape_index + 1:]
     ref_intersection_point, ref_intersected_shape, ref_intersected_shape_index = find_closest_intersection(reflected_ray, shapes_without_current_object)
-    if ref_intersection_point is not None:
-        reflected_color, _ = get_color(ref_intersection_point, ref_intersected_shape, ref_intersected_shape_index, reflected_ray, set_params, materials, lights, shapes, recursions_left - 1)
-        color_out += np.multiply(current_material.reflect_rgb, reflected_color)
+    # if ref_intersection_point is not None:
+    reflected_color, _ = get_color(ref_intersection_point, ref_intersected_shape, ref_intersected_shape_index, reflected_ray, set_params, materials, lights, shapes, recursions_left - 1)
+    color_out += np.multiply(current_material.reflect_rgb, reflected_color)
 
     color_out[color_out > 1] = 1
 
