@@ -192,10 +192,13 @@ class Box(Shape):
         t_max = np.maximum(t_0, t_1)
 
         has_intersection = np.isfinite(t_min)
+        if np.all(~has_intersection):
+            return False
+
         if np.any(~has_intersection):
             parallel_axes = np.argwhere(~has_intersection)[0]
             for axis in parallel_axes:
-                if not (self._box_min[axis] <= ray.origin[axis] <= self._box_max[axis]): # the ray direction is not a factor since the box is axis aligned
+                if not (self._box_min[axis] < ray.origin[axis] < self._box_max[axis]): # the ray direction is not a factor since the box is axis aligned
                     return False
 
         t_enter = t_min[has_intersection].max() # the first t inside all 3 slabs, is the max of mins
@@ -208,9 +211,9 @@ class Box(Shape):
     def normal_at_point(self, point: np.ndarray):
         # we're axis aligned, the normal will always have exactly one non-zero coordinate
         # we only need to find which face the point is on by finding the identical coordinate on the point
-        box_max_mask = point == self._box_max
-        box_min_mask = point == self._box_min
+        box_max_mask = (np.abs(point - self._box_max) < TANGENT_TOLERANCE)
+        box_min_mask = (np.abs(point - self._box_min) < TANGENT_TOLERANCE)
         if np.any(box_max_mask):
-            return box_max_mask.astype(np.float32)
+            return  box_max_mask.astype(np.float32)
         else:
             return -box_min_mask.astype(np.float32)
