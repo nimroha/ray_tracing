@@ -15,8 +15,8 @@ def plot_ray(ray, ax, color='g'):
     line.plot_3d(ax, t_1=10, c=color)
 
 def plot_box(box, ax, color='r'):
-    min_point = box._box_far
-    max_point = box._box_near
+    min_point = box._box_min
+    max_point = box._box_max
     for i in range(3):
         new_point = min_point.copy()
         new_point[i] = max_point[i]

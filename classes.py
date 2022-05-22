@@ -174,8 +174,8 @@ class Box(Shape):
 
     def __post_init__(self):
         half_length = self.length / 2
-        self._box_far  = self.center - half_length
-        self._box_near = self.center + half_length
+        self._box_min = self.center - half_length
+        self._box_max = self.center + half_length
 
 
     def find_intersection(self, ray: Ray):
@@ -185,11 +185,21 @@ class Box(Shape):
         :param ray: a Ray instance
         :return: the intersecting point, or False for no intersection
         """
-        t_min = np.divide(self._box_near - ray.origin, ray.direction)
-        t_max = np.divide(self._box_far  - ray.origin, ray.direction)
+        inv_direction = 1 / ray.direction
+        t_0 = np.multiply(self._box_min - ray.origin, inv_direction)
+        t_1 = np.multiply(self._box_max - ray.origin, inv_direction)
+        t_min = np.minimum(t_0, t_1) # handle rays coming from all directions
+        t_max = np.maximum(t_0, t_1)
 
-        t_enter = t_min[np.isfinite(t_min)].max() # the first t inside all 3 slabs, is the max of mins
-        t_exit  = t_max[np.isfinite(t_max)].min() # the first t outside one of the slabs, is the min of maxs
+        has_intersection = np.isfinite(t_min)
+        if np.any(~has_intersection):
+            parallel_axes = np.argwhere(~has_intersection)[0]
+            for axis in parallel_axes:
+                if not (self._box_min[axis] <= ray.origin[axis] <= self._box_max[axis]): # the ray direction is not a factor since the box is axis aligned
+                    return False
+
+        t_enter = t_min[has_intersection].max() # the first t inside all 3 slabs, is the max of mins
+        t_exit  = t_max[has_intersection].min() # the first t outside one of the slabs, is the min of maxs
         if t_exit < t_enter:
             return False # no intersection
 
@@ -198,8 +208,8 @@ class Box(Shape):
     def normal_at_point(self, point: np.ndarray):
         # we're axis aligned, the normal will always have exactly one non-zero coordinate
         # we only need to find which face the point is on by finding the identical coordinate on the point
-        box_max_mask = point == self._box_near
-        box_min_mask = point == self._box_far
+        box_max_mask = point == self._box_max
+        box_min_mask = point == self._box_min
         if np.any(box_max_mask):
             return box_max_mask.astype(np.float32)
         else:
