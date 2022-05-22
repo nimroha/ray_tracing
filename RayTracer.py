@@ -88,7 +88,7 @@ def find_closest_intersection(ray, shapes):
 
 def get_color(intersection_point, intersected_shape, intersected_shape_index, ray, set_params, materials, lights, shapes, recursions_left):
     if recursions_left == 0:
-        return BLACK.copy(), True # TODO handle ambient light here?
+        return set_params.background_rgb, True
 
     if intersection_point is None:
         return set_params.background_rgb, True
@@ -108,6 +108,7 @@ def get_color(intersection_point, intersected_shape, intersected_shape_index, ra
         if light_intersection_point is None:
             # skip if the light does not reach any object
             continue
+
         if not np.all(is_close(light_intersection_point, intersection_point)):
             if light_intersected_shape_index == intersected_shape_index:
                 # skip if the light hit the other side of the shape
